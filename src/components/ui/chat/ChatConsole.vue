@@ -66,7 +66,7 @@ const loadConversations = async () => {
     const res = await get('/ai/chat/conversations', {
       page: 1,
       size: 500,
-      sort: JSON.stringify([{ key: 'last_message_at', direction: 'desc' }]),
+      sort: '-last_message_at',
     });
     conversations.value = res.data || [];
   } catch (error) {
