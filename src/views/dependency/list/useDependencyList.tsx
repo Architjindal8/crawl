@@ -168,6 +168,7 @@ const useDependencyList = () => {
           icon: ['fa', 'cog'],
           onClick: async () => {
             store.commit(`${ns}/showDialog`, 'config');
+            await store.dispatch(`${ns}/getDependencyConfig`);
           },
         },
         {
@@ -527,7 +528,6 @@ const useDependencyList = () => {
   // get data
   const getData = async () => {
     await Promise.all([
-      store.dispatch(`${ns}/getDependencyConfig`),
       store.dispatch(`${ns}/getInstalledDependencyList`),
       store.dispatch(`${ns}/searchRepoList`),
       store.dispatch(`${ns}/getConfigSetupList`),
@@ -729,12 +729,7 @@ const useDependencyList = () => {
   setupListComponent(ns, store, ['node'], false);
 
   setupAutoUpdate(getData, 10000);
-  onBeforeMount(async () => {
-    await Promise.all([
-      store.dispatch(`${ns}/getDependencyConfig`),
-      store.dispatch(`${ns}/getConfigSetupList`),
-    ]);
-  });
+  onBeforeMount(() => store.dispatch(`${ns}/getConfigSetupList`));
 
   return {
     ...useList<Dependency>(ns, store, opts),

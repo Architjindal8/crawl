@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { translate } from '@/utils';
+import { ClForm } from '@/components';
 
 const t = translate;
 
@@ -20,7 +21,7 @@ const toInstallNodes = computed(() => {
 const visible = computed(() => state.activeDialogKey === 'config');
 
 const form = computed(() => state.config);
-const formRef = ref(null);
+const formRef = ref<typeof ClForm>();
 
 const confirmLoading = ref(false);
 const onConfirm = async () => {
@@ -31,11 +32,17 @@ const onConfirm = async () => {
   } finally {
     confirmLoading.value = false;
     store.commit(`${ns}/hideDialog`);
+    setTimeout(() => {
+      store.commit(`${ns}/resetConfig`);
+    }, 300);
   }
 };
 
 const onClose = () => {
   store.commit(`${ns}/hideDialog`);
+  setTimeout(() => {
+    store.commit(`${ns}/resetConfig`);
+  }, 300);
 };
 
 watch(visible, async () => {
@@ -51,12 +58,12 @@ defineOptions({ name: 'ClDependencyConfigDialog' });
   <cl-dialog
     :title="t('common.actions.configure')"
     :visible="visible"
-    width="640px"
+    width="800px"
     :confirm-loading="confirmLoading"
     @confirm="onConfirm"
     @close="onClose"
   >
-    <cl-form v-if="form" ref="formRef" :model="form">
+    <cl-form v-if="form" ref="formRef" :model="form" label-width="180px">
       <cl-form-item
         :span="4"
         :label="t('views.env.deps.config.form.name')"
@@ -97,5 +104,6 @@ defineOptions({ name: 'ClDependencyConfigDialog' });
         />
       </cl-form-item>
     </cl-form>
+    <el-skeleton v-else />
   </cl-dialog>
 </template>
