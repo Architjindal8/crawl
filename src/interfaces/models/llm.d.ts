@@ -36,14 +36,31 @@ export declare global {
   interface ChatMessage extends BaseModel {
     conversation_id: string;
     role: ChatMessageRole;
-    content: string;
-    model?: string;
+    content?: string;
+    content_ids?: string[];
+    contents?: ChatMessageContent[];
     tokens?: number;
+    model?: string;
+    metadata?: Record<string, any>;
     status: ChatMessageStatus;
     error?: string;
-    metadata?: Record<string, any>;
-    created_ts?: string;
-    updated_ts?: string;
+
+    // Frontend UI-specific properties
+    timestamp?: Date;
+    isStreaming?: boolean;
+  }
+
+  interface ChatMessageContent extends BaseModel {
+    message_id?: string;
+    key?: string;
+    content?: string;
+    type: 'text' | 'action';
+    action?: string;
+    action_status?: string;
+    hidden?: boolean;
+
+    // Frontend UI-specific properties
+    isStreaming?: boolean;
   }
 
   type ChatConversationStatus = 'active' | 'archived' | 'deleted';
@@ -60,15 +77,6 @@ export declare global {
     messages?: ChatMessage[];
     created_ts?: string;
     updated_ts?: string;
-  }
-
-  // Frontend-specific types for UI state
-  interface ChatMessageType {
-    role: ChatMessageRole;
-    content: string;
-    timestamp: Date;
-    isStreaming?: boolean;
-    conversationId?: string;
   }
 
   interface ChatRequest {
@@ -94,10 +102,17 @@ export declare global {
   interface ChatbotStreamMessage {
     conversation_id?: string;
     conversation_title?: string;
+    message_id?: string;
+    key?: string;
     content?: string;
+    type: 'text' | 'action'; // Message type
+    action_id?: string;
+    action?: string;
+    action_status?: string;
     is_done?: boolean;
     is_initial?: boolean;
     error?: string;
-    error_details?: Record<string, any>;
+    hidden?: boolean;
+    is_text_done?: boolean;
   }
 }

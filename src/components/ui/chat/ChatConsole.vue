@@ -83,25 +83,23 @@ const loadConversationMessages = debounce(async (conversationId: string) => {
   isLoadingMessages.value = true;
   try {
     const res = await get(`/ai/chat/conversations/${conversationId}/messages`);
-    const messages = (res.data || []).map((msg: ChatMessage) => ({
-      role: msg.role as ChatMessageRole,
-      content: msg.content || '',
-      timestamp: new Date(msg.created_ts || Date.now()),
-      conversationId: msg.conversation_id,
-      isStreaming: false,
-    }));
+    const messages = (res.data || []).map((msg: any) => {
+      const message: ChatMessage = {
+        ...msg,
+        timestamp: new Date(msg.created_ts || Date.now()),
+      };
+      return message;
+    });
 
     messages.sort(
-      (a: ChatMessageType, b: ChatMessageType) =>
-        a.timestamp.getTime() - b.timestamp.getTime()
+      (a: ChatMessage, b: ChatMessage) =>
+        (a.timestamp?.getTime() || 0) - (b.timestamp?.getTime() || 0)
     );
 
     chatHistory.splice(0, chatHistory.length, ...messages);
     currentConversationId.value = conversationId;
   } catch (error) {
     console.error('Failed to load conversation messages:', error);
-    const errorMessage =
-      error instanceof Error ? error.message : 'Failed to load messages';
   } finally {
     isLoadingMessages.value = false;
     // Scroll to bottom after loading messages
@@ -255,7 +253,7 @@ const resetChatbotConfig = () => {
 };
 
 // Initialize chat history
-const chatHistory = reactive<ChatMessageType[]>([]);
+const chatHistory = reactive<ChatMessage[]>([]);
 
 // Message handling
 const sendMessage = async (message: string) => {
@@ -268,16 +266,20 @@ const sendMessage = async (message: string) => {
     role: 'user',
     content: message,
     timestamp: new Date(),
+    conversation_id: currentConversationId.value || '',
+    status: 'completed',
   });
   // Scroll to bottom after adding user message
   messageListRef.value?.scrollToBottom();
 
   const responseIndex = chatHistory.length;
   chatHistory.push({
-    role: 'system',
-    content: '',
+    role: 'assistant',
     timestamp: new Date(),
     isStreaming: true,
+    conversation_id: currentConversationId.value || '',
+    status: 'pending',
+    contentsMap: {},
   });
   // Scroll to bottom after adding system message placeholder
   messageListRef.value?.scrollToBottom();
@@ -377,15 +379,16 @@ const sendStreamingRequest = async (
         const reader = response.body!.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
-        let fullResponse = '';
 
         const processStream = async () => {
           try {
             const { value, done } = await reader.read();
 
+            const currentMessage = chatHistory[responseIndex];
+
             if (done) {
-              if (chatHistory[responseIndex]) {
-                chatHistory[responseIndex].isStreaming = false;
+              if (currentMessage) {
+                currentMessage.isStreaming = false;
                 // Scroll to bottom when streaming is complete
                 messageListRef.value?.scrollToBottom();
               }
@@ -400,36 +403,67 @@ const sendStreamingRequest = async (
             for (const line of lines) {
               if (line.startsWith('data:')) {
                 try {
+                  // Event data
                   const eventData = line.slice(5).trim();
+
+                  // Skip if empty
                   if (eventData === '') continue;
 
+                  // Parse stream message
                   const chunk: ChatbotStreamMessage = JSON.parse(eventData);
 
+                  // Initial update with conversation id
                   if (chunk.is_initial) {
                     currentConversationId.value = chunk.conversation_id!;
                     continue;
                   }
 
+                  // Update conversation title
                   if (chunk.conversation_title) {
                     if (!currentConversation.value) {
-                      currentConversation.value = {
-                        title: chunk.conversation_title,
+                      currentConversation.value = {};
+                    }
+                    currentConversation.value.title = chunk.conversation_title;
+                  }
+
+                  // Get chunk content
+                  const contentKey = chunk.key || '';
+                  if (!currentMessage.contents?.length) {
+                    currentMessage.contents = [];
+                  }
+                  const contentIndex = currentMessage.contents.findIndex(
+                    c => c.key === contentKey
+                  );
+                  if (contentIndex >= 0) {
+                    // Update existing content
+                    const content = currentMessage.contents[contentIndex];
+                    if (chunk.type === 'text') {
+                      content.content += chunk.content || '';
+                      if (chunk.is_text_done) {
+                        content.isStreaming = false;
+                      }
+                    } else if (chunk.type === 'action') {
+                      currentMessage.contents[contentIndex] = {
+                        ...content,
+                        ...chunk,
                       };
-                    } else {
-                      currentConversation.value.title =
-                        chunk.conversation_title;
+                    }
+                  } else {
+                    // Add new content
+                    if (chunk.type === 'text') {
+                      const newContent: ChatMessageContent = {
+                        ...chunk,
+                        isStreaming: true,
+                      };
+                      currentMessage.contents.push(newContent);
+                    } else if (chunk.type === 'action') {
+                      currentMessage.contents.push({
+                        ...chunk,
+                      });
                     }
                   }
 
-                  fullResponse += chunk.content || '';
-                  if (chatHistory[responseIndex]) {
-                    chatHistory[responseIndex].content = fullResponse;
-                    chatHistory[responseIndex].conversationId =
-                      chunk.conversation_id;
-                    // Scroll to bottom during streaming
-                    messageListRef.value?.scrollToBottom();
-                  }
-
+                  // Final response
                   if (chunk.is_done) {
                     if (chatHistory[responseIndex]) {
                       chatHistory[responseIndex].isStreaming = false;
