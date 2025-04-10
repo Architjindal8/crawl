@@ -118,7 +118,7 @@ defineOptions({ name: 'ClChatMessageAction' });
   <el-dialog
     v-if="isJsonContent"
     v-model="isFullScreen"
-    title="JSON Content"
+    :title="action"
     width="80%"
     fullscreen
     append-to-body
@@ -263,9 +263,10 @@ defineOptions({ name: 'ClChatMessageAction' });
   max-width: 100%;
   overflow-x: auto;
 }
-
-:deep(.el-dialog__body) .jse-main {
-  height: calc(100vh - 150px);
+</style>
+<style>
+.el-dialog.is-fullscreen .jse-main {
+  height: calc(100vh - 80px) !important;
   background: var(--el-bg-color);
   padding: 16px;
   border-radius: 4px;
