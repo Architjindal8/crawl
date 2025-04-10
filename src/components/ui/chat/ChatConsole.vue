@@ -453,6 +453,7 @@ const sendStreamingRequest = async (
                     if (chunk.type === 'text') {
                       const newContent: ChatMessageContent = {
                         ...chunk,
+                        content: chunk.content || '',
                         isStreaming: true,
                       };
                       currentMessage.contents.push(newContent);

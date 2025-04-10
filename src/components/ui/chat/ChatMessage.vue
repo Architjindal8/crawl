@@ -11,26 +11,6 @@ const props = defineProps<{
   message: ChatMessage;
 }>();
 
-// Define interfaces for content items
-interface BaseContentItem {
-  type: string;
-  content: string;
-  isStreaming?: boolean;
-}
-
-interface TextContentItem extends BaseContentItem {
-  type: 'text';
-}
-
-interface ActionContentItem extends BaseContentItem {
-  type: 'action';
-  action: string;
-  action_status: string;
-  action_id?: string;
-}
-
-type ContentItem = TextContentItem | ActionContentItem;
-
 const md = markdownit({
   html: true,
   linkify: true,
@@ -81,79 +61,9 @@ watch(
   { immediate: true }
 );
 
-// Function to get action status icon
-const getActionStatusIcon = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return ['fas', 'circle-notch'];
-    case 'success':
-      return ['fas', 'check-circle'];
-    case 'failed':
-      return ['fas', 'times-circle'];
-    default:
-      return ['fas', 'circle-notch'];
-  }
-};
-
-// Function to get action status color
-const getActionStatusColor = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return 'var(--el-color-warning)';
-    case 'success':
-      return 'var(--el-color-success)';
-    case 'failed':
-      return 'var(--el-color-danger)';
-    default:
-      return 'var(--el-color-info)';
-  }
-};
-
-// Function to format action name for display
-const formatActionName = (action: string) => {
-  return action
-    .replace(/[_:]/g, ' ')
-    .replace(/\b\w/g, char => char.toUpperCase());
-};
-
-// Compute content items from message
-const contentItems = computed((): ContentItem[] => {
-  const items: ContentItem[] = [];
-
-  // First check for structured content items
-  if (props.message.contents && props.message.contents.length > 0) {
-    // Use the pre-structured content items from the message
-    props.message.contents.forEach(content => {
-      if (content.type === 'action') {
-        items.push({
-          type: 'action',
-          content: content.content || '',
-          action: content.action || '',
-          action_status: content.action_status || 'pending',
-          action_id: content.key,
-          isStreaming: false,
-        } as ActionContentItem);
-      } else {
-        items.push({
-          type: 'text',
-          content: content.content || '',
-          isStreaming: false,
-        } as TextContentItem);
-      }
-    });
-    return items;
-  }
-
-  // Add the main text content if it exists
-  if (props.message.content) {
-    items.push({
-      type: 'text',
-      content: props.message.content,
-      isStreaming: props.message.isStreaming,
-    } as TextContentItem);
-  }
-
-  return items;
+const filteredContents = computed<ChatMessageContent[]>(() => {
+  const { message } = props;
+  return message.contents?.filter(content => !content.hidden) || [];
 });
 
 defineOptions({ name: 'ClChatMessage' });
@@ -165,42 +75,17 @@ defineOptions({ name: 'ClChatMessage' });
       <template v-if="message.content">
         <div v-html="renderMarkdown(message.content)"></div>
       </template>
+
       <!-- Iterate through content items in order -->
       <div v-else class="content-items">
-        <template v-for="(content, index) in message.contents" :key="index">
+        <template v-for="(content, index) in filteredContents" :key="index">
           <!-- Action content -->
-          <div
+          <cl-chat-message-action
             v-if="content.type === 'action'"
-            class="action-item"
-            :class="`action-status-${content.action_status}`"
-          >
-            <div class="action-header">
-              <cl-icon
-                :icon="getActionStatusIcon(content.action_status!)"
-                :style="{
-                  color: getActionStatusColor(content.action_status!),
-                }"
-                class="action-icon"
-                :class="{
-                  spinning: content.action_status === 'pending',
-                }"
-              />
-              <span class="action-name">{{
-                formatActionName(content.action!)
-              }}</span>
-              <span
-                class="action-status"
-                :style="{
-                  color: getActionStatusColor(content.action_status!),
-                }"
-              >
-                {{ content.action_status }}
-              </span>
-            </div>
-            <div v-if="content.content" class="action-content">
-              {{ content.content }}
-            </div>
-          </div>
+            :action="content.action!"
+            :action-status="content.action_status!"
+            :content="content.content"
+          />
 
           <!-- Text content -->
           <div v-else-if="content.type === 'text'" class="text-content">
@@ -467,6 +352,7 @@ defineOptions({ name: 'ClChatMessage' });
 .typing-text {
   display: inline-block;
   color: var(--el-color-primary);
+  animation: fade 3s infinite;
 }
 
 @keyframes blink {
@@ -479,64 +365,13 @@ defineOptions({ name: 'ClChatMessage' });
   }
 }
 
-/* Action styles */
-.action-item {
-  padding: 8px 12px;
-  border-radius: 6px;
-  background-color: var(--el-fill-color-light);
-  border-left: 3px solid var(--el-color-info);
-}
-
-.action-item.action-status-pending {
-  border-left-color: var(--el-color-warning);
-}
-
-.action-item.action-status-success {
-  border-left-color: var(--el-color-success);
-}
-
-.action-item.action-status-failed {
-  border-left-color: var(--el-color-danger);
-}
-
-.action-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.action-icon {
-  font-size: 14px;
-}
-
-.spinning {
-  animation: spin 1s linear infinite;
-}
-
-.action-name {
-  flex: 1;
-  font-weight: 500;
-  color: var(--el-text-color-primary);
-}
-
-.action-status {
-  font-size: 12px;
-  text-transform: capitalize;
-}
-
-.action-content {
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
-  margin-left: 24px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
+@keyframes fade {
+  0%,
   100% {
-    transform: rotate(360deg);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
   }
 }
 </style>

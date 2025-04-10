@@ -50,13 +50,16 @@ export declare global {
     isStreaming?: boolean;
   }
 
+  type ChatMessageContentType = 'text' | 'action';
+  type ChatMessageActionStatus = 'pending' | 'success' | 'failed';
+
   interface ChatMessageContent extends BaseModel {
     message_id?: string;
     key?: string;
     content?: string;
-    type: 'text' | 'action';
+    type: ChatMessageContentType;
     action?: string;
-    action_status?: string;
+    action_status?: ChatMessageActionStatus;
     hidden?: boolean;
 
     // Frontend UI-specific properties
@@ -114,5 +117,14 @@ export declare global {
     error?: string;
     hidden?: boolean;
     is_text_done?: boolean;
+  }
+
+  interface ResourceContent {
+    uri?: string;
+    text?: string;
+  }
+
+  interface ParsedResourceContent extends ResourceContent {
+    text?: string | boolean | number | Record<string, any> | Array<any>;
   }
 }

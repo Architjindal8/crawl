@@ -41,7 +41,7 @@ const onResizeStart = (e: MouseEvent) => {
 const onResizeMove = (e: MouseEvent) => {
   if (!isResizing.value) return;
   const deltaX = startX.value - e.clientX;
-  const minWidth = props.minWidth || 250;
+  const minWidth = props.minWidth || 350;
   const maxWidth = props.maxWidth || 600;
   const newWidth = Math.min(
     Math.max(startWidth.value + deltaX, minWidth),

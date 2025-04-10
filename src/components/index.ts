@@ -28,6 +28,7 @@ import ChatConsole from './ui/chat/ChatConsole.vue';
 import ChatHistory from './ui/chat/ChatHistory.vue';
 import ChatInput from './ui/chat/ChatInput.vue';
 import ChatMessage from './ui/chat/ChatMessage.vue';
+import ChatMessageAction from './ui/chat/ChatMessageAction.vue';
 import ChatMessageList from './ui/chat/ChatMessageList.vue';
 import ChatSidebar from './ui/chat/ChatSidebar.vue';
 import CheckboxTree from './ui/checkbox/CheckboxTree.vue';
@@ -270,6 +271,7 @@ export {
   ChatHistory as ClChatHistory,
   ChatInput as ClChatInput,
   ChatMessage as ClChatMessage,
+  ChatMessageAction as ClChatMessageAction,
   ChatMessageList as ClChatMessageList,
   ChatSidebar as ClChatSidebar,
   CheckboxTree as ClCheckboxTree,
