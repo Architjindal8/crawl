@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n';
 import markdownit from 'markdown-it';
 import hljs from 'highlight.js';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onUnmounted } from 'vue';
 import 'highlight.js/styles/github.css';
 
 const { t } = useI18n();
@@ -101,15 +101,18 @@ defineOptions({ name: 'ClChatMessage' });
       </div>
     </div>
 
-    <div class="message-time">
+    <div class="message-footer">
       <!-- Show 'Generating...' for streaming messages -->
       <template v-if="message.isStreaming">
-        <span class="typing-text">{{
-          t('components.ai.chatbot.generating')
-        }}</span>
+        <cl-loading-text
+          class="typing-text"
+          :text="t('components.ai.chatbot.generating')"
+        />
       </template>
       <template v-else>
-        {{ formatTime(message.timestamp) }}
+        <span class="message-time">
+          {{ formatTime(message.timestamp) }}
+        </span>
       </template>
     </div>
   </div>
@@ -321,7 +324,7 @@ defineOptions({ name: 'ClChatMessage' });
   margin: 3px 0;
 }
 
-.message-time {
+.message-footer {
   font-size: 10px;
   opacity: 0.7;
   margin-top: 6px;
@@ -331,7 +334,7 @@ defineOptions({ name: 'ClChatMessage' });
   color: var(--el-color-white);
 }
 
-.message-container.user .message-time {
+.message-container.user .message-footer {
   color: var(--el-color-white);
 }
 
@@ -339,7 +342,7 @@ defineOptions({ name: 'ClChatMessage' });
   color: var(--el-text-color-regular);
 }
 
-.message-container.system .message-time {
+.message-container.system .message-footer {
   color: var(--el-text-color-regular);
 }
 
@@ -352,7 +355,12 @@ defineOptions({ name: 'ClChatMessage' });
 .typing-text {
   display: inline-block;
   color: var(--el-color-primary);
-  animation: fade 3s infinite;
+}
+
+@keyframes loadingDots {
+  to {
+    width: 1.25em;
+  }
 }
 
 @keyframes blink {
@@ -362,16 +370,6 @@ defineOptions({ name: 'ClChatMessage' });
   }
   50% {
     opacity: 0;
-  }
-}
-
-@keyframes fade {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
   }
 }
 </style>

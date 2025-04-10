@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onBeforeMount, watch, computed } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ChatInput from './ChatInput.vue';
 import useRequest from '@/services/request';
@@ -42,7 +42,7 @@ const chatbotConfig = ref<ChatbotConfig>({
 const availableProviders = ref<LLMProvider[]>([]);
 
 // Loading state for chat
-const isLoading = ref(false);
+const isGenerating = ref(false);
 const streamError = ref('');
 
 // Add conversation management
@@ -284,7 +284,7 @@ const sendMessage = async (message: string) => {
   // Scroll to bottom after adding system message placeholder
   messageListRef.value?.scrollToBottom();
 
-  isLoading.value = true;
+  isGenerating.value = true;
 
   try {
     await sendStreamingRequest(message, responseIndex);
@@ -294,23 +294,13 @@ const sendMessage = async (message: string) => {
     if (error instanceof DOMException && error.name === 'AbortError') {
       chatHistory.splice(responseIndex, 1);
     } else {
-      const errorMessage =
+      streamError.value =
         error instanceof Error
           ? extractErrorMessage(error.message)
           : 'An error occurred while sending your message';
-
-      streamError.value = errorMessage;
-
-      if (chatHistory[responseIndex]) {
-        chatHistory[responseIndex].content =
-          `I'm sorry, I encountered an error while processing your request: ${errorMessage}`;
-        chatHistory[responseIndex].isStreaming = false;
-        // Scroll to bottom after error message
-        messageListRef.value?.scrollToBottom();
-      }
     }
   } finally {
-    isLoading.value = false;
+    isGenerating.value = false;
     focusChatInput();
     abortController.value = null;
   }
@@ -320,7 +310,7 @@ const cancelMessage = () => {
   if (abortController.value) {
     abortController.value.abort();
     abortController.value = null;
-    isLoading.value = false;
+    isGenerating.value = false;
 
     const streamingMessageIndex = chatHistory.findIndex(msg => msg.isStreaming);
     if (streamingMessageIndex >= 0) {
@@ -537,6 +527,19 @@ const focusChatInput = debounce(() => {
   chatInputRef.value?.focus();
 });
 
+const stopMessageStreaming = () => {
+  chatHistory
+    .filter(msg => msg.isStreaming)
+    .forEach(msg => {
+      msg.isStreaming = false;
+    });
+};
+watch(isGenerating, () => {
+  if (!isGenerating.value) {
+    stopMessageStreaming();
+  }
+});
+
 defineOptions({ name: 'ClChatConsole' });
 </script>
 
@@ -600,7 +603,7 @@ defineOptions({ name: 'ClChatConsole' });
 
         <cl-chat-input
           ref="chatInputRef"
-          :is-loading="isLoading"
+          :is-loading="isGenerating"
           :providers="availableProviders"
           :selected-provider="chatbotConfig.provider"
           :selected-model="chatbotConfig.model"

@@ -22,13 +22,14 @@ const ai: LangAi = {
     enterHint: 'Press Enter to send, Shift+Enter for new line',
     poweredBy: 'Powered by Crawlab AI',
     cancel: 'Cancel',
-    generating: 'Generating...',
+    generating: 'Generating',
     searchHistory: 'Search history',
     noConversations: 'No chat history found',
     newChat: 'New Chat',
     addModel: {
       label: 'Add Model',
-      tooltip: 'You haven\'t configured any models yet. Add a model to get started.',
+      tooltip:
+        "You haven't configured any models yet. Add a model to get started.",
     },
   },
 };

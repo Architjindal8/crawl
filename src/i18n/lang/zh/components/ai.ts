@@ -22,7 +22,7 @@ const ai: LangAi = {
     enterHint: '按回车发送，Shift+回车换行',
     poweredBy: '由 Crawlab AI 提供支持',
     cancel: '取消',
-    generating: '生成中...',
+    generating: '生成中',
     searchHistory: '搜索历史',
     noConversations: '没有聊天记录',
     newChat: '新聊天',

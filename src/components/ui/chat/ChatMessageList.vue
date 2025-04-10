@@ -4,7 +4,7 @@ import { ElScrollbar } from 'element-plus';
 import { debounce } from 'lodash';
 
 const props = defineProps<{
-  messages: ChatMessageType[];
+  messages: ChatMessage[];
   isLoading: boolean;
   error?: string;
 }>();
@@ -48,11 +48,7 @@ defineOptions({ name: 'ClChatMessageList' });
 
 <template>
   <div class="chat-message-list">
-    <el-scrollbar 
-      ref="scrollbarRef" 
-      max-height="100%" 
-      @scroll="onScroll"
-    >
+    <el-scrollbar ref="scrollbarRef" max-height="100%" @scroll="onScroll">
       <div v-if="isLoading" class="loading-state">
         <el-skeleton :rows="5" animated />
       </div>

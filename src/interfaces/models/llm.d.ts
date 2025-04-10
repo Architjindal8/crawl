@@ -111,7 +111,7 @@ export declare global {
     type: 'text' | 'action'; // Message type
     action_id?: string;
     action?: string;
-    action_status?: string;
+    action_status?: ChatMessageActionStatus;
     is_done?: boolean;
     is_initial?: boolean;
     error?: string;
