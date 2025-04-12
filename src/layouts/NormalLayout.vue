@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import ClChatSidebar from '@/components/ui/chat/ChatSidebar.vue';
+import ClAssistantConsole from '@/components/core/ai/AssistantConsole.vue';
 
 const store = useStore();
 const { layout: state } = store.state as RootStoreState;
@@ -59,7 +60,9 @@ defineOptions({ name: 'ClNormalLayout' });
       @resize="resizeChatSidebar"
       @resize-start="chatSidebarResizing = true"
       @resize-end="chatSidebarResizing = false"
-    />
+    >
+      <cl-assistant-console :visible="chatSidebarVisible" />
+    </cl-chat-sidebar>
   </div>
 </template>
 

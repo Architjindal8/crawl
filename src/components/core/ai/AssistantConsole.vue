@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import ChatInput from './ChatInput.vue';
+import { ClChatInput } from '@/components';
 import useRequest from '@/services/request';
 import { getRequestBaseUrl } from '@/utils';
 import { debounce } from 'lodash';
@@ -25,10 +25,6 @@ const currentConversationTitle = computed(() => {
 
 defineProps<{
   visible: boolean;
-}>();
-
-const emit = defineEmits<{
-  (e: 'close'): void;
 }>();
 
 const chatbotConfig = ref<ChatbotConfig>({
@@ -457,7 +453,9 @@ const sendStreamingRequest = async (
                   // Final response
                   if (chunk.is_done) {
                     if (chatHistory[responseIndex]) {
+                      // Update streaming status
                       chatHistory[responseIndex].isStreaming = false;
+
                       // Scroll to bottom when streaming is complete
                       messageListRef.value?.scrollToBottom();
                     }
@@ -521,7 +519,7 @@ const openHistory = debounce(() => {
   loadConversations();
 });
 
-const chatInputRef = ref<InstanceType<typeof ChatInput> | null>(null);
+const chatInputRef = ref<InstanceType<typeof ClChatInput> | null>(null);
 
 const focusChatInput = debounce(() => {
   chatInputRef.value?.focus();
@@ -540,11 +538,11 @@ watch(isGenerating, () => {
   }
 });
 
-defineOptions({ name: 'ClChatConsole' });
+defineOptions({ name: 'ClAssistantConsole' });
 </script>
 
 <template>
-  <div class="chat-console">
+  <div class="assistant-console">
     <div class="console-header">
       <span v-if="visible" class="chat-toggle-btn" @click="emit('close')">
         <cl-icon :icon="['fa', 'angles-right']" class="toggle-indicator" />
@@ -626,7 +624,7 @@ defineOptions({ name: 'ClChatConsole' });
 </template>
 
 <style scoped>
-.chat-console {
+.assistant-console {
   display: flex;
   flex-direction: column;
   height: 100%;

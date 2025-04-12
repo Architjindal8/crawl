@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { useStore } from 'vuex';
-import ClChatConsole from '@/components/ui/chat/ChatConsole.vue';
 
 const store = useStore();
 
@@ -120,7 +119,7 @@ defineOptions({ name: 'ClChatSidebar' });
     "
   >
     <div class="resize-handle" @mousedown="onResizeStart"></div>
-    <cl-chat-console :visible="visible" @close="emit('close')" />
+    <slot />
   </div>
 </template>
 

@@ -17,6 +17,7 @@ import * as pagination from './ui/table/pagination';
 import * as store from './ui/table/store';
 import * as theme from './ui/lexical/utils/theme';
 import * as VariableNode from './ui/lexical/nodes/VariableNode';
+import AssistantConsole from './core/ai/AssistantConsole.vue';
 import AtomMaterialIcon from './ui/icon/AtomMaterialIcon.vue';
 import BlockOptionsDropdownList from './ui/lexical/components/BlockOptionsDropdownList.vue';
 import Box from './ui/box/Box.vue';
@@ -24,7 +25,6 @@ import Button from './ui/button/Button.vue';
 import ButtonGroup from './ui/button/ButtonGroup.vue';
 import Chart from './ui/chart/Chart.vue';
 import ChatConfigDialog from './ui/chat/ChatConfigDialog.vue';
-import ChatConsole from './ui/chat/ChatConsole.vue';
 import ChatHistory from './ui/chat/ChatHistory.vue';
 import ChatInput from './ui/chat/ChatInput.vue';
 import ChatMessage from './ui/chat/ChatMessage.vue';
@@ -261,6 +261,7 @@ export {
   store as store,
   theme as theme,
   VariableNode as VariableNode,
+  AssistantConsole as ClAssistantConsole,
   AtomMaterialIcon as ClAtomMaterialIcon,
   BlockOptionsDropdownList as ClBlockOptionsDropdownList,
   Box as ClBox,
@@ -268,7 +269,6 @@ export {
   ButtonGroup as ClButtonGroup,
   Chart as ClChart,
   ChatConfigDialog as ClChatConfigDialog,
-  ChatConsole as ClChatConsole,
   ChatHistory as ClChatHistory,
   ChatInput as ClChatInput,
   ChatMessage as ClChatMessage,
