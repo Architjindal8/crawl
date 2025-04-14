@@ -112,10 +112,6 @@ const showApiBaseUrl = computed(() => {
   );
 });
 
-const showDeploymentName = computed(() => {
-  return ['azure-openai'].includes(activeLLMProviderKey.value);
-});
-
 const showApiVersion = computed(() => {
   return ['azure-openai'].includes(activeLLMProviderKey.value);
 });
@@ -280,18 +276,6 @@ defineOptions({ name: 'ClSystemDetailTabAi' });
         required
       >
         <cl-edit-input v-model="form.api_base_url" @change="saveLLMProvider" />
-      </cl-form-item>
-      <cl-form-item
-        v-if="showDeploymentName"
-        :label="$t('views.system.ai.deploymentName')"
-        :span="4"
-        prop="deployment_name"
-        required
-      >
-        <cl-edit-input
-          v-model="form.deployment_name"
-          @change="saveLLMProvider"
-        />
       </cl-form-item>
       <cl-form-item
         v-if="showApiVersion"

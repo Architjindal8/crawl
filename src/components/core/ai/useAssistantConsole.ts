@@ -228,11 +228,27 @@ const useAssistantConsole = () => {
       currentConversation.value.title = chunk.conversation_title;
     }
 
+    // Update usage
+    if (chunk.usage) {
+      if (!currentMessage.usage) {
+        currentMessage.usage = {
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+        };
+      }
+      currentMessage.usage.prompt_tokens! += chunk.usage.prompt_tokens || 0;
+      currentMessage.usage.completion_tokens! +=
+        chunk.usage.completion_tokens || 0;
+      currentMessage.usage.total_tokens! += chunk.usage.total_tokens || 0;
+    }
+
     // Initialize contents array if needed
     if (!currentMessage.contents?.length) {
       currentMessage.contents = [];
     }
 
+    // Find content index
     const contentKey = chunk.key || '';
     const contentIndex = currentMessage.contents.findIndex(
       c => c.key === contentKey
@@ -255,13 +271,16 @@ const useAssistantConsole = () => {
     } else {
       // Add new content
       if (chunk.type === 'text') {
+        // Create new content object
         const newContent: ChatMessageContent = {
           ...chunk,
           content: chunk.content || '',
           isStreaming: true,
         };
+        // Add new content to the message
         currentMessage.contents.push(newContent);
       } else if (chunk.type === 'action') {
+        // Create new action content object
         currentMessage.contents.push({
           ...chunk,
         });
@@ -402,6 +421,7 @@ const useAssistantConsole = () => {
     // Refs
     messageListRef,
     chatInputRef,
+
     // State
     currentConversation,
     currentConversationId,

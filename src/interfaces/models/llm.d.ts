@@ -16,7 +16,6 @@ export declare global {
     enabled?: boolean;
     api_key?: string;
     api_base_url?: string;
-    deployment_name?: string;
     api_version?: string;
     models?: string[];
   }
@@ -125,6 +124,7 @@ export declare global {
     error?: string;
     hidden?: boolean;
     is_text_done?: boolean;
+    usage?: ChatMessageUsage;
   }
 
   interface ResourceContent {
