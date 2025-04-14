@@ -44,6 +44,7 @@ export declare global {
     metadata?: Record<string, any>;
     status: ChatMessageStatus;
     error?: string;
+    usage?: ChatMessageUsage;
 
     // Frontend UI-specific properties
     timestamp?: Date;
@@ -61,9 +62,16 @@ export declare global {
     action?: string;
     action_status?: ChatMessageActionStatus;
     hidden?: boolean;
+    usage?: ChatMessageUsage;
 
     // Frontend UI-specific properties
     isStreaming?: boolean;
+  }
+
+  interface ChatMessageUsage {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
   }
 
   type ChatConversationStatus = 'active' | 'archived' | 'deleted';

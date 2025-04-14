@@ -30,6 +30,10 @@ const ai: LangAi = {
       label: '添加模型',
       tooltip: '您还没有配置任何模型。添加一个模型开始聊天',
     },
+    tokens: '词元数',
+    promptTokens: '输入词元数',
+    completionTokens: '输出词元数',
+    totalTokens: '总词元数',
   },
 };
 

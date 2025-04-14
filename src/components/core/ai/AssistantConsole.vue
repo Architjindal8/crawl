@@ -1,12 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
+import { onBeforeMount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ClChatInput } from '@/components';
-import useRequest from '@/services/request';
-import { getRequestBaseUrl } from '@/utils';
 import { debounce } from 'lodash';
-import { ElMessage } from 'element-plus';
-import { AxiosError } from 'axios';
 import { useRouter } from 'vue-router';
 import useAssistantConsole from './useAssistantConsole';
 
@@ -19,12 +15,10 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { get } = useRequest();
 
 const router = useRouter();
 
 const {
-  currentConversation,
   currentConversationId,
   conversations,
   chatHistory,

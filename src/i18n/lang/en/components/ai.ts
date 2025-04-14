@@ -31,6 +31,10 @@ const ai: LangAi = {
       tooltip:
         "You haven't configured any models yet. Add a model to get started.",
     },
+    tokens: 'Tokens',
+    promptTokens: 'Prompt Tokens',
+    completionTokens: 'Completion Tokens',
+    totalTokens: 'Total Tokens',
   },
 };
 

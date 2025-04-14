@@ -31,6 +31,10 @@ export declare global {
         label: string;
         tooltip: string;
       };
+      tokens: string;
+      promptTokens: string;
+      completionTokens: string;
+      totalTokens: string;
     };
   }
 }

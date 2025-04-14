@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n';
 import markdownit from 'markdown-it';
 import hljs from 'highlight.js';
-import { computed, ref, watch, onUnmounted } from 'vue';
+import { computed, ref, watch } from 'vue';
 import 'highlight.js/styles/github.css';
 
 const { t } = useI18n();
@@ -66,6 +66,20 @@ const filteredContents = computed<ChatMessageContent[]>(() => {
   return message.contents?.filter(content => !content.hidden) || [];
 });
 
+// Compute token usage display
+const hasTokenUsage = computed(() => {
+  const { message } = props;
+  return message.usage && 
+    (message.usage.total_tokens || 
+     message.usage.prompt_tokens || 
+     message.usage.completion_tokens);
+});
+
+// Format token count with comma separators
+const formatTokenCount = (count?: number): string => {
+  return count ? count.toLocaleString() : '0';
+};
+
 defineOptions({ name: 'ClChatMessage' });
 </script>
 
@@ -102,6 +116,35 @@ defineOptions({ name: 'ClChatMessage' });
     </div>
 
     <div class="message-footer">
+      <!-- Token usage display -->
+      <el-popover
+        v-if="hasTokenUsage && !message.isStreaming && message.role === 'assistant'"
+        placement="top"
+        trigger="hover"
+        :width="220"
+        popper-class="token-usage-popover"
+      >
+        <template #reference>
+          <span class="token-usage">
+            {{ formatTokenCount(message.usage?.total_tokens) }} {{ t('components.ai.chatbot.tokens') }}
+          </span>
+        </template>
+        <div class="token-usage-details">
+          <div class="token-usage-row">
+            <span>{{ t('components.ai.chatbot.promptTokens') }}:</span>
+            <span>{{ formatTokenCount(message.usage?.prompt_tokens) }}</span>
+          </div>
+          <div class="token-usage-row">
+            <span>{{ t('components.ai.chatbot.completionTokens') }}:</span>
+            <span>{{ formatTokenCount(message.usage?.completion_tokens) }}</span>
+          </div>
+          <div class="token-usage-row total">
+            <span>{{ t('components.ai.chatbot.totalTokens') }}:</span>
+            <span>{{ formatTokenCount(message.usage?.total_tokens) }}</span>
+          </div>
+        </div>
+      </el-popover>
+
       <!-- Show 'Generating...' for streaming messages -->
       <template v-if="message.isStreaming">
         <cl-loading-text
@@ -328,6 +371,9 @@ defineOptions({ name: 'ClChatMessage' });
   font-size: 10px;
   opacity: 0.7;
   margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .message-container.user .message-content {
@@ -355,6 +401,31 @@ defineOptions({ name: 'ClChatMessage' });
 .typing-text {
   display: inline-block;
   color: var(--el-color-primary);
+}
+
+/* Token usage styles */
+.token-usage {
+  font-size: 10px;
+  cursor: pointer;
+  color: var(--el-color-info);
+  margin-right: 8px;
+}
+
+.token-usage-details {
+  font-size: 12px;
+}
+
+.token-usage-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.token-usage-row.total {
+  margin-top: 4px;
+  border-top: 1px solid var(--el-border-color-lighter);
+  padding-top: 4px;
+  font-weight: bold;
 }
 
 @keyframes loadingDots {
