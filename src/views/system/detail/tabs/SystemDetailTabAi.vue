@@ -336,7 +336,7 @@ defineOptions({ name: 'ClSystemDetailTabAi' });
               <el-input
                 v-model="customModelInput"
                 :placeholder="$t('views.system.ai.addCustomModel')"
-                @keyup.enter="addCustomModel"
+                @keyup.enter.prevent="addCustomModel"
               >
                 <template #append>
                   <cl-fa-icon-button
@@ -436,7 +436,6 @@ defineOptions({ name: 'ClSystemDetailTabAi' });
     }
 
     .custom-models {
-      margin-top: 12px;
 
       .add-model {
         margin-bottom: 12px;

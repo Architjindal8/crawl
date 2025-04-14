@@ -1,14 +1,21 @@
-import { computed, ref, watch, reactive } from 'vue';
+import { computed, ref, watch, reactive, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import useRequest from '@/services/request';
 import { getRequestBaseUrl } from '@/utils';
 import { debounce } from 'lodash';
 import { ElMessage } from 'element-plus';
 import { AxiosError } from 'axios';
+import { ClChatInput } from '@/components';
 
 const useAssistantConsole = () => {
   const { t } = useI18n();
   const { get } = useRequest();
+
+  // Refs
+  const messageListRef = ref<{ scrollToBottom: () => Promise<void> } | null>(
+    null
+  );
+  const chatInputRef = ref<InstanceType<typeof ClChatInput> | null>(null);
 
   // State management
   const currentConversation = ref<ChatConversation | null>(null);
@@ -27,7 +34,9 @@ const useAssistantConsole = () => {
   // Computed properties
   const currentConversationTitle = computed(() => {
     if (!currentConversationId.value) return t('components.ai.chatbot.newChat');
-    return currentConversation.value?.title || t('components.ai.chatbot.newChat');
+    return (
+      currentConversation.value?.title || t('components.ai.chatbot.newChat')
+    );
   });
 
   const chatbotConfig = ref<ChatbotConfig>({
@@ -60,7 +69,9 @@ const useAssistantConsole = () => {
 
     isLoadingMessages.value = true;
     try {
-      const res = await get(`/ai/chat/conversations/${conversationId}/messages`);
+      const res = await get(
+        `/ai/chat/conversations/${conversationId}/messages`
+      );
       const messages = (res.data || []).map((msg: any) => {
         const message: ChatMessage = {
           ...msg,
@@ -171,10 +182,13 @@ const useAssistantConsole = () => {
 
   // Message stream handling
   const createChatRequest = (message: string): ChatRequest => {
-    const { provider, model, systemPrompt, temperature, maxTokens } = chatbotConfig.value;
+    const { provider, model, systemPrompt, temperature, maxTokens } =
+      chatbotConfig.value;
 
     if (!provider || !model) {
-      throw new Error('Please select a provider and model before sending a message');
+      throw new Error(
+        'Please select a provider and model before sending a message'
+      );
     }
 
     return {
@@ -220,7 +234,9 @@ const useAssistantConsole = () => {
     }
 
     const contentKey = chunk.key || '';
-    const contentIndex = currentMessage.contents.findIndex(c => c.key === contentKey);
+    const contentIndex = currentMessage.contents.findIndex(
+      c => c.key === contentKey
+    );
 
     if (contentIndex >= 0) {
       // Update existing content
@@ -316,7 +332,7 @@ const useAssistantConsole = () => {
       const chatRequest = createChatRequest(message);
       const baseUrl = getRequestBaseUrl();
       const url = `${baseUrl}/ai/chat/stream`;
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: getStreamHeaders(),
@@ -329,7 +345,11 @@ const useAssistantConsole = () => {
         throw new Error(extractErrorMessage(text));
       }
 
-      await processStreamData(response.body!.getReader(), responseIndex, onMessageUpdate);
+      await processStreamData(
+        response.body!.getReader(),
+        responseIndex,
+        onMessageUpdate
+      );
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -342,6 +362,7 @@ const useAssistantConsole = () => {
   const selectConversation = async (conversationId: string) => {
     if (currentConversationId.value === conversationId) return;
 
+    chatInputRef.value?.focus();
     currentConversationId.value = conversationId;
     streamError.value = '';
     await loadConversationMessages(conversationId);
@@ -352,6 +373,7 @@ const useAssistantConsole = () => {
     localStorage.removeItem('currentConversationId');
     streamError.value = '';
     chatHistory.splice(0, chatHistory.length);
+    chatInputRef.value?.focus();
   };
 
   // Watch conversation ID changes
@@ -370,7 +392,16 @@ const useAssistantConsole = () => {
     }
   });
 
+  onMounted(() => {
+    setTimeout(() => {
+      chatInputRef.value?.focus();
+    }, 200);
+  });
+
   return {
+    // Refs
+    messageListRef,
+    chatInputRef,
     // State
     currentConversation,
     currentConversationId,

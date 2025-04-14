@@ -19,6 +19,8 @@ const { t } = useI18n();
 const router = useRouter();
 
 const {
+  messageListRef,
+  chatInputRef,
   currentConversationId,
   conversations,
   chatHistory,
@@ -43,10 +45,6 @@ const {
   sendStreamingRequest,
   extractErrorMessage,
 } = useAssistantConsole();
-
-// Add ref for message list component
-const messageListRef = ref<{ scrollToBottom: () => Promise<void> } | null>(null);
-const chatInputRef = ref<InstanceType<typeof ClChatInput> | null>(null);
 
 // Message handling
 const sendMessage = async (message: string) => {
