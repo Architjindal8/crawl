@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 import { useStore } from 'vuex';
-import ClChatSidebar from '@/components/ui/chat/ChatSidebar.vue';
-import ClAssistantConsole from '@/components/core/ai/AssistantConsole.vue';
 
 const store = useStore();
 const { layout: state } = store.state as RootStoreState;
@@ -61,7 +59,10 @@ defineOptions({ name: 'ClNormalLayout' });
       @resize-start="chatSidebarResizing = true"
       @resize-end="chatSidebarResizing = false"
     >
-      <cl-assistant-console :visible="chatSidebarVisible" />
+      <cl-assistant-console
+        :visible="chatSidebarVisible"
+        @close="closeChatSidebar"
+      />
     </cl-chat-sidebar>
   </div>
 </template>

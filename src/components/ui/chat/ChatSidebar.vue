@@ -14,7 +14,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
   (e: 'resize', width: number): void;
   (e: 'resize-start'): void;
   (e: 'resize-end'): void;

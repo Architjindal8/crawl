@@ -8,248 +8,51 @@ import { debounce } from 'lodash';
 import { ElMessage } from 'element-plus';
 import { AxiosError } from 'axios';
 import { useRouter } from 'vue-router';
+import useAssistantConsole from './useAssistantConsole';
+
+defineProps<{
+  visible: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: 'close'): void;
+}>();
 
 const { t } = useI18n();
 const { get } = useRequest();
 
 const router = useRouter();
 
-// Add current conversation ref
-const currentConversation = ref<ChatConversation | null>(null);
-
-// Add computed property for current conversation title
-const currentConversationTitle = computed(() => {
-  if (!currentConversationId.value) return t('components.ai.chatbot.newChat');
-  return currentConversation.value?.title || t('components.ai.chatbot.newChat');
-});
-
-defineProps<{
-  visible: boolean;
-}>();
-
-const chatbotConfig = ref<ChatbotConfig>({
-  systemPrompt:
-    'You are a helpful AI assistant for Crawlab, a web crawling and data extraction platform.',
-  temperature: 0.7,
-  maxTokens: 1000,
-});
-
-// Available LLM providers and models
-const availableProviders = ref<LLMProvider[]>([]);
-
-// Loading state for chat
-const isGenerating = ref(false);
-const streamError = ref('');
-
-// Add conversation management
-const conversations = ref<ChatConversation[]>([]);
-const currentConversationId = ref<string>('');
-const isLoadingConversations = ref(false);
-const isLoadingMessages = ref(false);
-
-// History dialog state
-const historyDialogVisible = ref(false);
+const {
+  currentConversation,
+  currentConversationId,
+  conversations,
+  chatHistory,
+  isGenerating,
+  streamError,
+  isLoadingConversations,
+  isLoadingMessages,
+  historyDialogVisible,
+  configDialogVisible,
+  abortController,
+  availableProviders,
+  chatbotConfig,
+  currentConversationTitle,
+  loadConversations,
+  loadConversationMessages,
+  loadCurrentConversation,
+  loadLLMProviders,
+  loadChatbotConfig,
+  saveChatbotConfig,
+  selectConversation,
+  createNewConversation,
+  sendStreamingRequest,
+  extractErrorMessage,
+} = useAssistantConsole();
 
 // Add ref for message list component
-const messageListRef = ref<{ scrollToBottom: () => Promise<void> } | null>(
-  null
-);
-
-// Load conversations
-const loadConversations = async () => {
-  isLoadingConversations.value = true;
-  try {
-    const res = await get('/ai/chat/conversations', {
-      page: 1,
-      size: 500,
-      sort: '-last_message_at',
-    });
-    conversations.value = res.data || [];
-  } catch (error) {
-    console.error('Failed to load conversations:', error);
-  } finally {
-    isLoadingConversations.value = false;
-  }
-};
-
-// Load messages for a conversation
-const loadConversationMessages = debounce(async (conversationId: string) => {
-  if (!conversationId) return;
-
-  isLoadingMessages.value = true;
-  try {
-    const res = await get(`/ai/chat/conversations/${conversationId}/messages`);
-    const messages = (res.data || []).map((msg: any) => {
-      const message: ChatMessage = {
-        ...msg,
-        timestamp: new Date(msg.created_ts || Date.now()),
-      };
-      return message;
-    });
-
-    messages.sort(
-      (a: ChatMessage, b: ChatMessage) =>
-        (a.timestamp?.getTime() || 0) - (b.timestamp?.getTime() || 0)
-    );
-
-    chatHistory.splice(0, chatHistory.length, ...messages);
-    currentConversationId.value = conversationId;
-  } catch (error) {
-    console.error('Failed to load conversation messages:', error);
-  } finally {
-    isLoadingMessages.value = false;
-    // Scroll to bottom after loading messages
-    messageListRef.value?.scrollToBottom();
-  }
-});
-
-// Select conversation
-const selectConversation = async (conversationId: string) => {
-  if (currentConversationId.value === conversationId) return;
-
-  currentConversationId.value = conversationId;
-  streamError.value = '';
-  await loadConversationMessages(conversationId);
-  messageListRef.value?.scrollToBottom();
-};
-
-// Create new conversation
-const createNewConversation = () => {
-  currentConversationId.value = '';
-  localStorage.removeItem('currentConversationId');
-  streamError.value = '';
-  chatHistory.splice(0, chatHistory.length);
-  focusChatInput();
-};
-
-// Load current conversation details
-const loadCurrentConversation = debounce(async (conversationId: string) => {
-  if (!conversationId) {
-    currentConversation.value = null;
-    return;
-  }
-  try {
-    const res = await get(`/ai/chat/conversations/${conversationId}`);
-    currentConversation.value = res.data;
-  } catch (error) {
-    if ((error as AxiosError)?.response?.status === 404) {
-      currentConversationId.value = '';
-      return;
-    }
-    console.error('Failed to load conversation details:', error);
-    currentConversation.value = null;
-  }
-});
-
-// Watch for conversation ID changes to load details
-watch(currentConversationId, async newId => {
-  // Save current conversation ID to localStorage
-  if (newId) {
-    localStorage.setItem('currentConversationId', newId);
-    await loadCurrentConversation(newId);
-  } else {
-    localStorage.removeItem('currentConversationId');
-    currentConversation.value = null;
-  }
-
-  // Update selected conversation ID if needed
-  if (newId && !currentConversationId.value) {
-    await loadConversations();
-    currentConversationId.value = newId;
-  }
-});
-
-// Initialize
-onBeforeMount(async () => {
-  await loadConversations();
-  loadChatbotConfig();
-  await loadLLMProviders();
-
-  // Load saved conversation ID from localStorage
-  const savedConversationId = localStorage.getItem('currentConversationId');
-  if (savedConversationId) {
-    await loadConversationMessages(savedConversationId);
-    await loadCurrentConversation(savedConversationId);
-    currentConversationId.value = savedConversationId;
-  }
-});
-
-// Add AbortController for cancelling requests
-const abortController = ref<AbortController | null>(null);
-
-// Error message extraction
-const extractErrorMessage = (errorData: string): string => {
-  try {
-    // Try to parse the error data as JSON
-    const parsed = JSON.parse(errorData);
-    if (parsed.error_detail?.message) return parsed.error_detail.message;
-    if (parsed.error)
-      return typeof parsed.error === 'string'
-        ? parsed.error
-        : JSON.stringify(parsed.error);
-    if (parsed.text?.startsWith('Error:')) return parsed.text;
-    if (typeof parsed === 'object') return JSON.stringify(parsed, null, 2);
-    return errorData;
-  } catch (e) {
-    return errorData;
-  }
-};
-
-// API calls
-const loadLLMProviders = debounce(async () => {
-  try {
-    const res = await get('/ai/llm/providers', { available: true });
-    availableProviders.value = res.data || [];
-
-    if (!availableProviders.value.length) {
-      // Reset provider and model if no providers are available
-      resetChatbotConfig();
-    }
-
-    if (!chatbotConfig.value.provider || !chatbotConfig.value.model) {
-      if (availableProviders.value.length > 0) {
-        chatbotConfig.value.provider = availableProviders.value[0].key!;
-        chatbotConfig.value.model = availableProviders.value[0].models![0];
-        localStorage.setItem(
-          'chatbotConfig',
-          JSON.stringify(chatbotConfig.value)
-        );
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load LLM providers:', error);
-  }
-});
-
-// Load configuration from localStorage
-const loadChatbotConfig = () => {
-  const storedConfig = localStorage.getItem('chatbotConfig');
-  if (storedConfig) {
-    try {
-      const parsedConfig = JSON.parse(storedConfig);
-      chatbotConfig.value = { ...chatbotConfig.value, ...parsedConfig };
-    } catch (e) {
-      console.error('Failed to parse stored chatbot config', e);
-    }
-  }
-};
-
-// Save configuration to localStorage
-const saveChatbotConfig = (config: ChatbotConfig) => {
-  configDialogVisible.value = false;
-  chatbotConfig.value = { ...chatbotConfig.value, ...config };
-  localStorage.setItem('chatbotConfig', JSON.stringify(chatbotConfig.value));
-  ElMessage.success(t('common.message.success.save'));
-};
-
-// Reset chatbot configuration
-const resetChatbotConfig = () => {
-  chatbotConfig.value = {};
-  localStorage.removeItem('chatbotConfig');
-};
-
-// Initialize chat history
-const chatHistory = reactive<ChatMessage[]>([]);
+const messageListRef = ref<{ scrollToBottom: () => Promise<void> } | null>(null);
+const chatInputRef = ref<InstanceType<typeof ClChatInput> | null>(null);
 
 // Message handling
 const sendMessage = async (message: string) => {
@@ -283,7 +86,9 @@ const sendMessage = async (message: string) => {
   isGenerating.value = true;
 
   try {
-    await sendStreamingRequest(message, responseIndex);
+    await sendStreamingRequest(message, responseIndex, () => {
+      messageListRef.value?.scrollToBottom();
+    });
   } catch (error) {
     console.error('Error sending message:', error);
 
@@ -308,187 +113,11 @@ const cancelMessage = () => {
     abortController.value = null;
     isGenerating.value = false;
 
-    const streamingMessageIndex = chatHistory.findIndex(msg => msg.isStreaming);
+    const streamingMessageIndex = chatHistory.findIndex((msg: ChatMessage) => msg.isStreaming);
     if (streamingMessageIndex >= 0) {
       chatHistory.splice(streamingMessageIndex, 1);
     }
   }
-};
-
-const sendStreamingRequest = async (
-  message: string,
-  responseIndex: number
-): Promise<void> => {
-  return new Promise<void>((resolve, reject) => {
-    const { provider, model, systemPrompt, temperature, maxTokens } =
-      chatbotConfig.value;
-
-    if (!provider || !model) {
-      reject(
-        new Error('Please select a provider and model before sending a message')
-      );
-      return;
-    }
-
-    const chatRequest: ChatRequest = {
-      provider,
-      model,
-      query: message,
-      system_prompt: systemPrompt,
-      temperature,
-      max_tokens: maxTokens,
-      conversation_id: currentConversationId.value,
-    };
-
-    const baseUrl = getRequestBaseUrl();
-    const url = `${baseUrl}/ai/chat/stream`;
-    const token = localStorage.getItem('token');
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: token } : {}),
-    };
-
-    fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(chatRequest),
-      signal: abortController.value?.signal,
-    })
-      .then(response => {
-        if (!response.ok) {
-          response.text().then(text => {
-            reject(new Error(extractErrorMessage(text)));
-          });
-          return;
-        }
-
-        const reader = response.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        const processStream = async () => {
-          try {
-            const { value, done } = await reader.read();
-
-            const currentMessage = chatHistory[responseIndex];
-
-            if (done) {
-              if (currentMessage) {
-                currentMessage.isStreaming = false;
-                // Scroll to bottom when streaming is complete
-                messageListRef.value?.scrollToBottom();
-              }
-              resolve();
-              return;
-            }
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-
-            for (const line of lines) {
-              if (line.startsWith('data:')) {
-                try {
-                  // Event data
-                  const eventData = line.slice(5).trim();
-
-                  // Skip if empty
-                  if (eventData === '') continue;
-
-                  // Parse stream message
-                  const chunk: ChatbotStreamMessage = JSON.parse(eventData);
-
-                  // Initial update with conversation id
-                  if (chunk.is_initial) {
-                    currentConversationId.value = chunk.conversation_id!;
-                    continue;
-                  }
-
-                  // Update conversation title
-                  if (chunk.conversation_title) {
-                    if (!currentConversation.value) {
-                      currentConversation.value = {};
-                    }
-                    currentConversation.value.title = chunk.conversation_title;
-                  }
-
-                  // Get chunk content
-                  const contentKey = chunk.key || '';
-                  if (!currentMessage.contents?.length) {
-                    currentMessage.contents = [];
-                  }
-                  const contentIndex = currentMessage.contents.findIndex(
-                    c => c.key === contentKey
-                  );
-                  if (contentIndex >= 0) {
-                    // Update existing content
-                    const content = currentMessage.contents[contentIndex];
-                    if (chunk.type === 'text') {
-                      content.content += chunk.content || '';
-                      if (chunk.is_text_done) {
-                        content.isStreaming = false;
-                      }
-                    } else if (chunk.type === 'action') {
-                      currentMessage.contents[contentIndex] = {
-                        ...content,
-                        ...chunk,
-                      };
-                    }
-                  } else {
-                    // Add new content
-                    if (chunk.type === 'text') {
-                      const newContent: ChatMessageContent = {
-                        ...chunk,
-                        content: chunk.content || '',
-                        isStreaming: true,
-                      };
-                      currentMessage.contents.push(newContent);
-                    } else if (chunk.type === 'action') {
-                      currentMessage.contents.push({
-                        ...chunk,
-                      });
-                    }
-                  }
-
-                  // Final response
-                  if (chunk.is_done) {
-                    if (chatHistory[responseIndex]) {
-                      // Update streaming status
-                      chatHistory[responseIndex].isStreaming = false;
-
-                      // Scroll to bottom when streaming is complete
-                      messageListRef.value?.scrollToBottom();
-                    }
-                    resolve();
-                    return;
-                  }
-                } catch (e) {
-                  console.error('Error parsing event data:', e);
-                }
-              } else if (line.startsWith('event: error')) {
-                const errorLine = lines.find(l => l.startsWith('data:'));
-                if (errorLine) {
-                  const errorData = errorLine.slice(5).trim();
-                  const errorMessage = extractErrorMessage(errorData);
-                  console.error('Stream error:', errorData);
-                  reject(new Error(errorMessage));
-                  return;
-                }
-              }
-            }
-
-            processStream();
-          } catch (error) {
-            reject(error);
-          }
-        };
-
-        processStream();
-      })
-      .catch(error => {
-        reject(error);
-      });
-  });
 };
 
 const selectProviderModel = ({
@@ -507,9 +136,6 @@ const addProviderModel = () => {
   router.push('/system/ai');
 };
 
-// Configuration dialog
-const configDialogVisible = ref(false);
-
 const openConfig = () => {
   configDialogVisible.value = true;
 };
@@ -519,22 +145,36 @@ const openHistory = debounce(() => {
   loadConversations();
 });
 
-const chatInputRef = ref<InstanceType<typeof ClChatInput> | null>(null);
-
 const focusChatInput = debounce(() => {
   chatInputRef.value?.focus();
 });
 
 const stopMessageStreaming = () => {
   chatHistory
-    .filter(msg => msg.isStreaming)
-    .forEach(msg => {
+    .filter((msg: ChatMessage) => msg.isStreaming)
+    .forEach((msg: ChatMessage) => {
       msg.isStreaming = false;
     });
 };
+
 watch(isGenerating, () => {
   if (!isGenerating.value) {
     stopMessageStreaming();
+  }
+});
+
+// Initialize
+onBeforeMount(async () => {
+  await loadConversations();
+  loadChatbotConfig();
+  await loadLLMProviders();
+
+  // Load saved conversation ID from localStorage
+  const savedConversationId = localStorage.getItem('currentConversationId');
+  if (savedConversationId) {
+    await loadConversationMessages(savedConversationId);
+    await loadCurrentConversation(savedConversationId);
+    currentConversationId.value = savedConversationId;
   }
 });
 
