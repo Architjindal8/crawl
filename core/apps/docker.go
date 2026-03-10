@@ -3,16 +3,17 @@ package apps
 import (
 	"bufio"
 	"fmt"
+	"os"
+	"os/exec"
+	"strings"
+	"time"
+
 	"github.com/crawlab-team/crawlab/core/interfaces"
 	"github.com/crawlab-team/crawlab/core/sys_exec"
 	"github.com/crawlab-team/crawlab/core/utils"
 	"github.com/crawlab-team/crawlab/trace"
 	"github.com/imroc/req"
 	"github.com/spf13/viper"
-	"os"
-	"os/exec"
-	"strings"
-	"time"
 )
 
 type Docker struct {

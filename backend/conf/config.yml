@@ -25,3 +25,5 @@ api:
 
 log:
   path: /var/log/crawlab
+node:
+  type: master

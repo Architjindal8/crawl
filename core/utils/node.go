@@ -1,7 +1,7 @@
 package utils
 
 func IsMaster() bool {
-	return EnvIsTrue("node.master", false)
+	return true // hardcoded for local dev
 }
 
 func GetNodeType() string {

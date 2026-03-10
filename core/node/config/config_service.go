@@ -2,14 +2,15 @@ package config
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"sync"
+
 	"github.com/crawlab-team/crawlab/core/config"
 	"github.com/crawlab-team/crawlab/core/entity"
 	"github.com/crawlab-team/crawlab/core/interfaces"
 	"github.com/crawlab-team/crawlab/core/utils"
 	"github.com/crawlab-team/crawlab/trace"
-	"os"
-	"path/filepath"
-	"sync"
 )
 
 type Service struct {
@@ -75,7 +76,7 @@ func (svc *Service) GetNodeName() (res string) {
 }
 
 func (svc *Service) IsMaster() (res bool) {
-	return svc.cfg.IsMaster
+	return true
 }
 
 func (svc *Service) GetAuthKey() (res string) {

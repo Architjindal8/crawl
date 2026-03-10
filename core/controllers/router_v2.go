@@ -1,10 +1,11 @@
 package controllers
 
 import (
+	"net/http"
+
 	"github.com/crawlab-team/crawlab/core/middlewares"
 	models2 "github.com/crawlab-team/crawlab/core/models/models/v2"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 type RouterGroups struct {
@@ -369,6 +370,12 @@ func InitRoutes(app *gin.Engine) (err error) {
 			HandlerFunc: GetSyncDownload,
 		},
 	})
-
+	RegisterActions(groups.AnonymousGroup, "/version", []Action{
+		{
+			Method:      http.MethodGet,
+			Path:        "",
+			HandlerFunc: GetSystemInfo,
+		},
+	})
 	return nil
 }
