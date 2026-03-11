@@ -6,6 +6,7 @@ import (
 	"github.com/crawlab-team/crawlab/core/interfaces"
 	"github.com/crawlab-team/crawlab/core/models/models"
 	"github.com/crawlab-team/crawlab/core/models/service"
+	spider2 "github.com/crawlab-team/crawlab/core/spider"
 	"github.com/crawlab-team/crawlab/trace"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"sync"
@@ -48,6 +49,9 @@ func GetResultService(spiderId primitive.ObjectID) (svc2 interfaces.ResultServic
 	// spider
 	s, err := modelSvc.GetSpiderById(spiderId)
 	if err != nil {
+		return nil, trace.TraceError(err)
+	}
+	if err := spider2.EnsureDataCollectionForSpider(s); err != nil {
 		return nil, trace.TraceError(err)
 	}
 

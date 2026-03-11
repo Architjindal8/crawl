@@ -7,6 +7,7 @@ import (
 	"github.com/crawlab-team/crawlab/core/interfaces"
 	models2 "github.com/crawlab-team/crawlab/core/models/models/v2"
 	"github.com/crawlab-team/crawlab/core/models/service"
+	spider2 "github.com/crawlab-team/crawlab/core/spider"
 	"github.com/crawlab-team/crawlab/core/spider/admin"
 	"github.com/crawlab-team/crawlab/core/utils"
 	"github.com/crawlab-team/crawlab/db/mongo"
@@ -48,16 +49,9 @@ func GetSpiderById(c *gin.Context) {
 	}
 
 	// data collection (compatible to old version) # TODO: remove in the future
-	if s.ColName == "" && !s.ColId.IsZero() {
-		col, err := service.NewModelServiceV2[models2.DataCollectionV2]().GetById(s.ColId)
-		if err != nil {
-			if !errors.Is(err, mongo2.ErrNoDocuments) {
-				HandleErrorInternalServerError(c, err)
-				return
-			}
-		} else {
-			s.ColName = col.Name
-		}
+	if err := spider2.EnsureDataCollectionForSpiderV2(s); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
 	}
 
 	// git
@@ -215,6 +209,11 @@ func getSpiderListWithStats(c *gin.Context) {
 	// iterate list again
 	var data []models2.SpiderV2
 	for _, s := range spiders {
+		if err := spider2.EnsureDataCollectionForSpiderV2(&s); err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
+
 		// spider stat
 		st, ok := dict[s.Id]
 		if ok {
@@ -255,6 +254,10 @@ func PostSpider(c *gin.Context) {
 	u := GetUserFromContextV2(c)
 
 	// add
+	if err := spider2.EnsureDataCollectionForSpiderV2(&s); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
 	s.SetCreated(u.Id)
 	s.SetUpdated(u.Id)
 	id, err := service.NewModelServiceV2[models2.SpiderV2]().InsertOne(s)
@@ -309,6 +312,11 @@ func PutSpiderById(c *gin.Context) {
 	modelSvc := service.NewModelServiceV2[models2.SpiderV2]()
 
 	// save
+	s.SetId(id)
+	if err := spider2.EnsureDataCollectionForSpiderV2(&s); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
 	s.SetUpdated(u.Id)
 	err = modelSvc.ReplaceById(id, s)
 	if err != nil {

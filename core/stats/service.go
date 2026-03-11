@@ -152,7 +152,7 @@ func (svc *Service) getDailyTasksStats(query bson.M) (data interface{}, err erro
 			bson.D{{"_id", 1}},
 		}},
 	}
-	var results []entity.StatsDailyItem
+	results := make([]entity.StatsDailyItem, 0)
 	if err := mongo.GetMongoCol(interfaces.ModelColNameTaskStat).Aggregate(pipeline, nil).All(&results); err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (svc *Service) getTaskStatsByStatus(query bson.M) (data interface{}, err er
 			},
 		}},
 	}
-	var results []bson.M
+	results := make([]bson.M, 0)
 	if err := mongo.GetMongoCol(interfaces.ModelColNameTask).Aggregate(pipeline, nil).All(&results); err != nil {
 		return nil, err
 	}
@@ -231,7 +231,7 @@ func (svc *Service) getTaskStatsByNode(query bson.M) (data interface{}, err erro
 			},
 		}},
 	}
-	var results []bson.M
+	results := make([]bson.M, 0)
 	if err := mongo.GetMongoCol(interfaces.ModelColNameTask).Aggregate(pipeline, nil).All(&results); err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func (svc *Service) getTaskStatsBySpider(query bson.M) (data interface{}, err er
 		}},
 		{{"$limit", 10}},
 	}
-	var results []bson.M
+	results := make([]bson.M, 0)
 	if err := mongo.GetMongoCol(interfaces.ModelColNameTask).Aggregate(pipeline, nil).All(&results); err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package stats
 
 import (
 	log2 "github.com/apex/log"
+	"github.com/crawlab-team/crawlab/core/constants"
 	"github.com/crawlab-team/crawlab/core/database"
 	interfaces2 "github.com/crawlab-team/crawlab/core/database/interfaces"
 	"github.com/crawlab-team/crawlab/core/interfaces"
@@ -54,6 +55,9 @@ func (svc *ServiceV2) InsertData(taskId primitive.ObjectID, records ...map[strin
 	tableName := item.tableName
 	if utils.IsPro() && dbSvc != nil {
 		for _, record := range records {
+			if _, ok := record[constants.TaskKey]; !ok {
+				record[constants.TaskKey] = taskId
+			}
 			if err := dbSvc.CreateRow(dbId, "", tableName, record); err != nil {
 				log2.Errorf("failed to insert data: %v", err)
 				continue
@@ -63,6 +67,9 @@ func (svc *ServiceV2) InsertData(taskId primitive.ObjectID, records ...map[strin
 	} else {
 		var records2 []interface{}
 		for _, record := range records {
+			if _, ok := record[constants.TaskKey]; !ok {
+				record[constants.TaskKey] = taskId
+			}
 			records2 = append(records2, record)
 		}
 		_, err = mongo.GetMongoCol(tableName).InsertMany(records2)
@@ -119,13 +126,14 @@ func (svc *ServiceV2) getDatabaseServiceItem(taskId primitive.ObjectID) (item *d
 	}
 
 	// store in cache
-	svc.databaseServiceItems[taskId.Hex()] = &databaseServiceItem{
+	item = &databaseServiceItem{
 		taskId:    taskId,
 		dbId:      s.DataSourceId,
 		dbSvc:     dbSvc,
 		tableName: s.ColName,
 		time:      time.Now(),
 	}
+	svc.databaseServiceItems[taskId.Hex()] = item
 
 	return item, nil
 }

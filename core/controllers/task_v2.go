@@ -8,6 +8,7 @@ import (
 	"github.com/crawlab-team/crawlab/core/models/models/v2"
 	"github.com/crawlab-team/crawlab/core/models/service"
 	"github.com/crawlab-team/crawlab/core/result"
+	spider2 "github.com/crawlab-team/crawlab/core/spider"
 	"github.com/crawlab-team/crawlab/core/spider/admin"
 	"github.com/crawlab-team/crawlab/core/task/log"
 	"github.com/crawlab-team/crawlab/core/task/scheduler"
@@ -46,6 +47,10 @@ func GetTaskById(c *gin.Context) {
 
 	// spider
 	t.Spider, _ = service.NewModelServiceV2[models.SpiderV2]().GetById(t.SpiderId)
+	if err := spider2.EnsureDataCollectionForSpiderV2(t.Spider); err != nil {
+		HandleErrorInternalServerError(c, err)
+		return
+	}
 
 	// skip if task status is pending
 	if t.Status == constants.TaskStatusPending {
@@ -138,6 +143,10 @@ func GetTaskList(c *gin.Context) {
 	// cache spider list to dict
 	spiderDict := map[primitive.ObjectID]models.SpiderV2{}
 	for _, s := range spiders {
+		if err := spider2.EnsureDataCollectionForSpiderV2(&s); err != nil {
+			HandleErrorInternalServerError(c, err)
+			return
+		}
 		spiderDict[s.Id] = s
 	}
 

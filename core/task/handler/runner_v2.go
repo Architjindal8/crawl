@@ -63,6 +63,12 @@ type RunnerV2 struct {
 	logBatchSize  int
 }
 
+type ipcMessage struct {
+	Type    string      `json:"type"`
+	Payload interface{} `json:"payload"`
+	Ipc     bool        `json:"ipc"`
+}
+
 func (r *RunnerV2) Init() (err error) {
 	// update task
 	if err := r.updateTask("", nil); err != nil {
@@ -265,7 +271,7 @@ func (r *RunnerV2) startLoggingReaderStdout() {
 			break
 		}
 		line = strings.TrimSuffix(line, "\n")
-		r.writeLogLines([]string{line})
+		r.handleStdoutLine(line)
 	}
 }
 
@@ -278,6 +284,20 @@ func (r *RunnerV2) startLoggingReaderStderr() {
 		line = strings.TrimSuffix(line, "\n")
 		r.writeLogLines([]string{line})
 	}
+}
+
+func (r *RunnerV2) handleStdoutLine(line string) {
+	if line == "" {
+		return
+	}
+
+	records, ok := parseIpcDataRecords(line)
+	if ok {
+		r.writeDataRecords(records)
+		return
+	}
+
+	r.writeLogLines([]string{line})
 }
 
 func (r *RunnerV2) startHealthCheck() {
@@ -564,6 +584,54 @@ func (r *RunnerV2) writeLogLines(lines []string) {
 		trace.PrintError(err)
 		return
 	}
+}
+
+func (r *RunnerV2) writeDataRecords(records []entity.Result) {
+	if len(records) == 0 {
+		return
+	}
+
+	data, err := json.Marshal(&entity.StreamMessageTaskData{
+		TaskId:  r.tid,
+		Records: records,
+	})
+	if err != nil {
+		trace.PrintError(err)
+		return
+	}
+
+	msg := &grpc.StreamMessage{
+		Code: grpc.StreamMessageCode_INSERT_DATA,
+		Data: data,
+	}
+	if err := r.sub.Send(msg); err != nil {
+		trace.PrintError(err)
+	}
+}
+
+func parseIpcDataRecords(line string) (records []entity.Result, ok bool) {
+	var msg ipcMessage
+	if err := json.Unmarshal([]byte(line), &msg); err != nil {
+		return nil, false
+	}
+	if !msg.Ipc || msg.Type != "data" {
+		return nil, false
+	}
+
+	switch payload := msg.Payload.(type) {
+	case []interface{}:
+		for _, item := range payload {
+			record, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			records = append(records, entity.Result(record))
+		}
+	case map[string]interface{}:
+		records = append(records, entity.Result(payload))
+	}
+
+	return records, len(records) > 0
 }
 
 func (r *RunnerV2) _updateTaskStat(status string) {
