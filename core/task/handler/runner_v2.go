@@ -270,7 +270,8 @@ func (r *RunnerV2) startLoggingReaderStdout() {
 		if err != nil {
 			break
 		}
-		line = strings.TrimSuffix(line, "\n")
+		// Trim both '\n' and '\r' for Windows compatibility (Python stdout often ends with "\r\n").
+		line = strings.TrimRight(line, "\r\n")
 		r.handleStdoutLine(line)
 	}
 }
@@ -281,7 +282,7 @@ func (r *RunnerV2) startLoggingReaderStderr() {
 		if err != nil {
 			break
 		}
-		line = strings.TrimSuffix(line, "\n")
+		line = strings.TrimRight(line, "\r\n")
 		r.writeLogLines([]string{line})
 	}
 }

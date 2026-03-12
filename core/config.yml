@@ -1,0 +1,9 @@
+node:
+  master: "true"
+mongo:
+  host: localhost
+  port: 27017
+  db: crawlab
+redis:
+  address: localhost
+  port: 6379

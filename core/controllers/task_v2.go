@@ -7,13 +7,11 @@ import (
 	"github.com/crawlab-team/crawlab/core/interfaces"
 	"github.com/crawlab-team/crawlab/core/models/models/v2"
 	"github.com/crawlab-team/crawlab/core/models/service"
-	"github.com/crawlab-team/crawlab/core/result"
 	spider2 "github.com/crawlab-team/crawlab/core/spider"
 	"github.com/crawlab-team/crawlab/core/spider/admin"
 	"github.com/crawlab-team/crawlab/core/task/log"
 	"github.com/crawlab-team/crawlab/core/task/scheduler"
 	"github.com/crawlab-team/crawlab/core/utils"
-	"github.com/crawlab-team/crawlab/db/generic"
 	"github.com/crawlab-team/crawlab/db/mongo"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -462,37 +460,72 @@ func GetTaskData(c *gin.Context) {
 	}
 
 	// result service
-	resultSvc, err := result.GetResultService(t.SpiderId)
+	// Prefer querying by spider's `col_name` directly.
+	// This avoids relying on `col_id` / data collections which may be missing in older installations.
+	s, err := service.NewModelServiceV2[models.SpiderV2]().GetById(t.SpiderId)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
+	colName := s.ColName
+	if colName == "" {
+		colName = utils.GetSpiderCol("", s.Name)
+	}
+	modelColSvc := service.GetBaseServiceByColName(interfaces.ModelIdResult, colName)
 
 	// query
-	query := generic.ListQuery{
-		generic.ListQueryCondition{
-			Key:   constants.TaskKey,
-			Op:    generic.OpEqual,
-			Value: t.Id,
+	// Backward compatible query:
+	// - newer result writers store `task_id` as ObjectId
+	// - older writers may store `task_id` as hex string
+	q := bson.M{
+		"$or": []bson.M{
+			{constants.TaskKey: t.Id},
+			{constants.TaskKey: t.Id.Hex()},
 		},
 	}
 
 	// list
-	data, err := resultSvc.List(query, &generic.ListOptions{
+	findOpts := &mongo.FindOptions{
 		Skip:  (p.Page - 1) * p.Size,
 		Limit: p.Size,
-		Sort:  []generic.ListSort{{"_id", generic.SortDirectionDesc}},
-	})
+		Sort:  bson.D{{Key: "_id", Value: -1}},
+	}
+	list, err := modelColSvc.GetList(q, findOpts)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
 	}
 
 	// total
-	total, err := resultSvc.Count(query)
+	total, err := modelColSvc.Count(q)
 	if err != nil {
 		HandleErrorInternalServerError(c, err)
 		return
+	}
+
+	// Legacy fallback: some older runners/SDKs write into the global `results` collection.
+	if total == 0 && colName != "results" {
+		legacySvc := service.GetBaseServiceByColName(interfaces.ModelIdResult, "results")
+		if legacySvc != nil {
+			legacyTotal, err2 := legacySvc.Count(q)
+			if err2 == nil && legacyTotal > 0 {
+				total = legacyTotal
+				list, err = legacySvc.GetList(q, findOpts)
+				if err != nil {
+					HandleErrorInternalServerError(c, err)
+					return
+				}
+			}
+		}
+	}
+
+	var data []interface{}
+	for _, d := range list.GetModels() {
+		if r, ok := d.(interfaces.Result); ok {
+			data = append(data, r)
+			continue
+		}
+		data = append(data, d)
 	}
 
 	HandleSuccessWithListData(c, data, total)

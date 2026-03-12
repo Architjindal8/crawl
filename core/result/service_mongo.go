@@ -132,10 +132,19 @@ func NewResultServiceMongo(colId primitive.ObjectID, _ primitive.ObjectID) (svc2
 
 	// data collection
 	svc.dc, _ = svc.modelSvc.GetDataCollectionById(colId)
+	if svc.dc == nil {
+		// Backward-compatible fallback for older installations where spiders may not have a valid
+		// `col_id` / data collection record yet. In this case, use the legacy `results` collection
+		// to avoid panics and allow the Data tab to load.
+		svc.dc = &models.DataCollection{Name: "results"}
+	}
 	go func() {
 		for {
 			time.Sleep(1 * time.Second)
-			svc.dc, _ = svc.modelSvc.GetDataCollectionById(colId)
+			dc, _ := svc.modelSvc.GetDataCollectionById(colId)
+			if dc != nil {
+				svc.dc = dc
+			}
 		}
 	}()
 

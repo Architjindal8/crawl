@@ -1,0 +1,24 @@
+2026/03/12 12:16:50  info initialized middlewares successfully
+2026/03/12 12:16:50  info initialized routes successfully
+2026/03/12 12:16:50  info current node type: master
+2026/03/12 12:16:50  info grpc server listens to 127.0.0.1:9666
+2026/03/12 12:16:50  info master[305d2d94-194c-11f1-b895-047c162fa7ad] exists in db
+2026/03/12 12:16:50  info updated master[305d2d94-194c-11f1-b895-047c162fa7ad] in db. id: 69ad1ae4cd88140d3440411e
+2026/03/12 12:16:50  info master[305d2d94-194c-11f1-b895-047c162fa7ad] monitoring started
+2026/03/12 12:16:50  info cron: start              
+2026/03/12 12:16:50  info [GrpcClient] grpc client connected to 127.0.0.1:9666
+2026/03/12 12:16:50  info [GrpcClient] grpc client subscribed to remote server
+2026/03/12 12:16:50  info [GrpcClient] start handling stream message...
+2026/03/12 12:16:50  info [NodeServerV2] master received subscribe request from node[305d2d94-194c-11f1-b895-047c162fa7ad]
+2026/03/12 12:16:50  info [NodeServerV2] master subscribed node[305d2d94-194c-11f1-b895-047c162fa7ad]
+2026/03/12 12:21:01  info task[69b2625465c5db5a910c2611] started
+2026/03/12 12:21:02  info task[69b2625465c5db5a910c2611] finished
+2026/03/12 12:34:03  info grpc server stopping...  
+2026/03/12 12:34:03  info grpc server closing listener...
+2026/03/12 12:34:03  info grpc server stopped      
+2026/03/12 12:34:03  info master[305d2d94-194c-11f1-b895-047c162fa7ad] service has stopped
+2026/03/12 12:34:03  info [NodeServerV2] node[305d2d94-194c-11f1-b895-047c162fa7ad] has disconnected
+2026/03/12 12:34:04 error grpc client subscribe error: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:9666: connectex: No connection could be made because the target machine actively refused it.". reattempt in 0.3 seconds...
+2026/03/12 12:34:04 error grpc client subscribe error: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:9666: connectex: No connection could be made because the target machine actively refused it.". reattempt in 1.0 seconds...
+2026/03/12 12:34:05 error grpc client subscribe error: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:9666: connectex: No connection could be made because the target machine actively refused it.". reattempt in 1.5 seconds...
+2026/03/12 12:34:06 error grpc client subscribe error: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:9666: connectex: No connection could be made because the target machine actively refused it.". reattempt in 1.7 seconds...
